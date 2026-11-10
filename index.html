@@ -389,7 +389,7 @@ function connect(){
     es.onmessage=ev=>{ try{ const d=JSON.parse(ev.data); if(d.event==='message'){ const r=parseMsg(d.message); if(r) onReading(r,d.time?d.time*1000:Date.now()); } }catch(e){} };
   }catch(e){}
 }
-function urlTemplate(){ return `https://ntfy.sh/${state.topic}/publish?message=t:[T];h:[H]`; }
+function urlTemplate(){ return `https://ntfy.sh/${state.topic}/publish?message=t:[T]_h:[H]`; }
 
 // ---------- UI wiring ----------
 function seg(id,key,after){
@@ -413,7 +413,7 @@ $('saveTopic').onclick=()=>{ const v=$('topic').value.trim().replace(/[^A-Za-z0-
 $('copyUrl').onclick=()=>{ try{ navigator.clipboard.writeText(urlTemplate()).then(()=>{$('copyUrl').textContent='הועתק';setTimeout(()=>$('copyUrl').textContent='העתק',1500)}).catch(()=>{}); }catch(e){} };
 $('testBtn').onclick=()=>{
   $('testRes').textContent='שולח…';
-  fetch(`https://ntfy.sh/${encodeURIComponent(state.topic)}`,{method:'POST',body:'t:20.5;h:52'})
+  fetch(`https://ntfy.sh/${encodeURIComponent(state.topic)}`,{method:'POST',body:'t:20.5_h:52'})
     .then(r=>{ $('testRes').textContent=r.ok?'נשלח. אמור להופיע 20.5° ו-52% תוך שנייה.':'השליחה נכשלה ('+r.status+')'; })
     .catch(()=>{ $('testRes').textContent='אין חיבור ל-ntfy.sh'; });
 };
