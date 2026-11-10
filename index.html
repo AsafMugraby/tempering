@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1e140f">
+<meta name="apple-mobile-web-app-title" content="טמפרור">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="icon.png">
+<link rel="manifest" href="manifest.json">
+<title>תנאי טמפרור</title>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#1e140f; --card:#2a1d16; --card2:#33241b; --line:#4a3528;
+  --text:#f6ece4; --muted:#bfa999; --gold:#d9a35b;
+  --good:#5fbf7f; --ok:#c9c25a; --warn:#e39a4b; --bad:#e0584f;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Rubik,system-ui,sans-serif;line-height:1.5}
+.wrap{max-width:760px;margin:0 auto;padding:18px 16px 60px}
+header{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
+h1{font-size:20px;margin:0;font-weight:700;letter-spacing:.2px}
+h1 span{color:var(--gold)}
+.status{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.dot{width:9px;height:9px;border-radius:50%;background:#777}
+.dot.live{background:var(--good);box-shadow:0 0 0 0 rgba(95,191,127,.7);animation:pulse 2s infinite}
+.dot.stale{background:var(--warn)}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(95,191,127,.6)}70%{box-shadow:0 0 0 9px rgba(95,191,127,0)}100%{box-shadow:0 0 0 0 rgba(95,191,127,0)}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px}
+.hero{display:grid;grid-template-columns:170px 1fr;gap:18px;align-items:center}
+@media(max-width:560px){.hero{grid-template-columns:1fr;justify-items:center;text-align:center}}
+.gauge{position:relative;width:170px;height:170px}
+.gauge svg{transform:rotate(-90deg)}
+.gauge .num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.gauge .num b{font-size:46px;font-weight:800;line-height:1}
+.gauge .num small{color:var(--muted);font-size:12px}
+.verdict{font-size:26px;font-weight:800;margin:0 0 4px}
+.verdict-sub{color:var(--muted);margin:0;font-size:15px}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.metric{background:var(--card2);border-radius:12px;padding:12px;text-align:center}
+.metric .lbl{font-size:12px;color:var(--muted)}
+.metric .val{font-size:26px;font-weight:700;direction:ltr}
+.metric .bar{height:5px;border-radius:3px;background:#3b2b21;margin-top:8px;overflow:hidden}
+.metric .bar i{display:block;height:100%;border-radius:3px;transition:width .6s,background .6s}
+.metric .sc{font-size:12px;color:var(--muted);margin-top:4px}
+h2{font-size:15px;margin:0 0 10px;color:var(--gold);font-weight:700}
+ul.recs{margin:0;padding:0;list-style:none}
+ul.recs li{padding:8px 10px;border-radius:10px;background:var(--card2);margin-bottom:6px;font-size:15px;border-right:4px solid var(--muted)}
+ul.recs li.good{border-color:var(--good)} ul.recs li.ok{border-color:var(--ok)}
+ul.recs li.warn{border-color:var(--warn)} ul.recs li.bad{border-color:var(--bad)}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+label{font-size:14px;color:var(--muted)}
+select,input[type=number],input[type=text]{background:var(--card2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font:inherit;font-size:15px}
+input[type=number]{width:90px;direction:ltr;text-align:center}
+input[type=text]{direction:ltr;width:100%}
+input[type=range]{width:100%;accent-color:var(--gold)}
+.seg{display:inline-flex;background:var(--card2);border-radius:10px;padding:3px;gap:2px}
+.seg button{background:none;border:0;color:var(--muted);font:inherit;font-size:14px;padding:6px 12px;border-radius:8px;cursor:pointer}
+.seg button.on{background:var(--gold);color:#1e140f;font-weight:700}
+.temps{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center}
+.temps div{background:var(--card2);border-radius:10px;padding:8px 4px}
+.temps b{display:block;font-size:18px;direction:ltr}
+.temps span{font-size:12px;color:var(--muted)}
+.chart{width:100%;height:110px;display:block}
+.legend{font-size:12px;color:var(--muted);display:flex;gap:14px;margin-top:4px}
+.legend i{display:inline-block;width:10px;height:3px;border-radius:2px;margin-left:5px;vertical-align:middle}
+details{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 16px;margin-bottom:12px}
+summary{cursor:pointer;font-weight:700;color:var(--gold);font-size:15px}
+details ol{padding-right:20px;margin:10px 0}
+details li{margin-bottom:6px;font-size:14.5px}
+code{background:#120c09;padding:2px 6px;border-radius:6px;font-size:13px;direction:ltr;display:inline-block;word-break:break-all}
+.btn{background:var(--gold);color:#1e140f;border:0;border-radius:10px;padding:8px 14px;font:inherit;font-weight:700;cursor:pointer}
+.btn.ghost{background:var(--card2);color:var(--text);border:1px solid var(--line)}
+.small{font-size:13px;color:var(--muted)}
+.manual{display:none;margin-top:12px}
+.manual.show{display:block}
+.science p{font-size:14.5px;margin:6px 0}
+.dp{font-size:13px;color:var(--muted);text-align:center;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>תנאי <span>טמפרור</span></h1>
+  <div class="status"><span class="dot" id="dot"></span><span id="statusText">ממתין לנתונים</span></div>
+</header>
+
+<div class="card hero">
+  <div class="gauge">
+    <svg width="170" height="170" viewBox="0 0 170 170">
+      <circle cx="85" cy="85" r="72" fill="none" stroke="#3b2b21" stroke-width="14"/>
+      <circle id="arc" cx="85" cy="85" r="72" fill="none" stroke="#777" stroke-width="14" stroke-linecap="round"
+        stroke-dasharray="452.4" stroke-dashoffset="452.4" style="transition:stroke-dashoffset .8s,stroke .8s"/>
+    </svg>
+    <div class="num"><b id="score">–</b><small>מתוך 100</small></div>
+  </div>
+  <div>
+    <p class="verdict" id="verdict">אין עדיין נתונים</p>
+    <p class="verdict-sub" id="verdictSub">חבר את הקיצור באייפון או הזן ערכים ידנית למטה.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="metrics">
+    <div class="metric"><div class="lbl">טמפרטורת חדר</div><div class="val" id="vT">–</div><div class="bar"><i id="bT"></i></div><div class="sc" id="sT"></div></div>
+    <div class="metric"><div class="lbl">לחות יחסית</div><div class="val" id="vH">–</div><div class="bar"><i id="bH"></i></div><div class="sc" id="sH"></div></div>
+    <div class="metric"><div class="lbl">נקודת טל</div><div class="val" id="vD">–</div><div class="bar"><i id="bD"></i></div><div class="sc" id="sD"></div></div>
+  </div>
+  <div class="dp" id="safeCool"></div>
+</div>
+
+<div class="card">
+  <h2>מה לעשות עכשיו</h2>
+  <ul class="recs" id="recs"><li>ממתין לנתונים.</li></ul>
+</div>
+
+<div class="card">
+  <h2>ההגדרות שלי</h2>
+  <div class="row" style="margin-bottom:12px">
+    <label>שוקולד:</label>
+    <div class="seg" id="chocSeg">
+      <button data-v="dark" class="on">מריר</button>
+      <button data-v="milk">חלב</button>
+      <button data-v="white">לבן</button>
+    </div>
+  </div>
+  <div class="row" style="margin-bottom:12px">
+    <label>איך אני מקרר את המוצר:</label>
+    <div class="seg" id="coolSeg">
+      <button data-v="room" class="on">בחדר</button>
+      <button data-v="fridge">במקרר</button>
+    </div>
+    <span id="fridgeBox" style="display:none"><label>טמפ' מקרר:</label> <input type="number" id="fridgeT" value="12" step="0.5" min="0" max="20"> °C</span>
+  </div>
+  <div class="row">
+    <label>כמות שוקולד:</label>
+    <input type="number" id="grams" value="1000" step="50" min="0"> <label>גרם ← מיקריו:</label> <b id="mycryoG" style="direction:ltr">10 g</b>
+  </div>
+</div>
+
+<div class="card">
+  <h2>טמפרטורות שוקולד – שיטת מיקריו</h2>
+  <div class="temps">
+    <div><b id="tMelt">40–45°</b><span>המסה</span></div>
+    <div><b id="tSeed">34–35°</b><span>הוספת מיקריו</span></div>
+    <div><b id="tWork">31–32°</b><span>עבודה</span></div>
+    <div><b>1%</b><span>מיקריו</span></div>
+  </div>
+  <p class="small" style="margin:8px 0 0">לפי Callebaut / Cacao Barry. אם על האריזה של השוקולד שלך כתוב אחרת, האריזה קובעת.</p>
+</div>
+
+<div class="card">
+  <h2>הסשן הנוכחי</h2>
+  <svg class="chart" id="chart" viewBox="0 0 600 110" preserveAspectRatio="none"></svg>
+  <div class="legend"><span><i style="background:var(--gold)"></i>ציון</span><span><i style="background:#e0584f"></i>טמפ'</span><span><i style="background:#5fa8d9"></i>לחות</span><span id="histInfo"></span></div>
+</div>
+
+<div class="card">
+  <div class="row" style="justify-content:space-between">
+    <h2 style="margin:0">הזנה ידנית</h2>
+    <button class="btn ghost" id="manualBtn">הפעל הזנה ידנית</button>
+  </div>
+  <div class="manual" id="manual">
+    <label>טמפרטורה: <b id="mTl" style="direction:ltr">21°C</b></label>
+    <input type="range" id="mT" min="10" max="35" step="0.5" value="21">
+    <label>לחות: <b id="mHl" style="direction:ltr">55%</b></label>
+    <input type="range" id="mH" min="10" max="95" step="1" value="55">
+    <p class="small">כשההזנה הידנית פעילה, נתונים מהאייפון לא דורסים אותה.</p>
+  </div>
+</div>
+
+<details id="setup">
+  <summary>חיבור לאפל הום (פעם אחת)</summary>
+  <p class="small">אפל לא מאפשרת לדף אינטרנט לקרוא ישירות מ-HomeKit. לכן קיצור באייפון קורא את החיישן כל 30 שניות ושולח את הנתונים לערוץ פרטי ב-ntfy.sh, והדף הזה מאזין לערוץ ומתעדכן מיד.</p>
+  <label>שם הערוץ שלך (זהה בכל המכשירים):</label>
+  <div class="row" style="margin:6px 0 10px"><input type="text" id="topic"><button class="btn ghost" id="saveTopic">שמור</button></div>
+  <ol>
+    <li>באפליקציית <b>הבית</b>, שנה את השם של החיישנים במטבח ל"מטבח טמפ'" ו"מטבח לחות". כרגע כולם נקראים Temperature Sensor ו-Humidity Sensor, וקל להתבלבל ביניהם בקיצורים.</li>
+    <li>פתח את אפליקציית <b>קיצורים</b> וצור קיצור חדש, למשל "טמפרור – שידור".</li>
+    <li>הוסף פעולת <b>חזור</b> (Repeat) והגדר <b>120</b> פעמים. כל הפעולות הבאות נכנסות בתוכה.</li>
+    <li>הוסף <b>קבל את המצב של</b> (Get the state of), בחר את החיישן שלך (HomePod, Eve, Aqara וכו') ואת <b>הטמפרטורה הנוכחית</b>.</li>
+    <li>הוסף עוד <b>קבל את המצב של</b> לאותו חיישן, הפעם <b>הלחות היחסית הנוכחית</b>.</li>
+    <li>הוסף פעולת <b>טקסט</b> עם הכתובת הזו, ובמקום [T] ו-[H] שים את המשתנים משני הצעדים הקודמים:<br><code id="urlTpl"></code> <button class="btn ghost" id="copyUrl" style="padding:4px 10px;font-size:13px">העתק</button></li>
+    <li>הוסף <b>קבל תוכן של כתובת URL</b> (Get Contents of URL) שמקבלת את הטקסט.</li>
+    <li>הוסף <b>המתן</b> (Wait) של <b>30</b> שניות.</li>
+    <li>מפעילים את הקיצור כשמתחילים לעבוד. הוא רץ כשעה. אפשר גם להוסיף אותו לווידג'ט או לבקש מ-Siri.</li>
+  </ol>
+  <p class="small">הערוץ ציבורי בתיאוריה, אבל אף אחד לא יודע את השם שלו. עוברות בו רק טמפרטורה ולחות.</p>
+  <button class="btn ghost" id="testBtn">שלח קריאת בדיקה מהדף</button> <span class="small" id="testRes"></span>
+</details>
+
+<details class="science">
+  <summary>על מה הדירוג מבוסס</summary>
+  <p><b>טמפרטורת חדר.</b> Callebaut ממליצים על 18–21°C. בחדר חם השוקולד מתקשה בתבניות לאט, יש סיכון לאבד טמפרור ולפריחת שומן. בחדר קר מדי השוקולד בקערה מסמיך מהר ונוצרים פסים.</p>
+  <p><b>לחות יחסית.</b> הטווח המקובל הוא עד 65%, ועדיף סביב 50%. מעל זה הסוכר על פני השוקולד סופג לחות.</p>
+  <p><b>נקודת טל – הגורם החשוב באמת.</b> הלחות עצמה לא הורסת את הטמפרור. הבעיה מתחילה כשפני השוקולד קרים יותר מנקודת הטל של החדר, למשל כשמוציאים ממקרר. אז מתעבים עליהם מים, ממיסים סוכר, ואחרי הייבוש נשארת פריחת סוכר אפורה. הדף מחשב את נקודת הטל בנוסחת Magnus ומשווה אותה לטמפרטורה הקרה ביותר שהשוקולד יפגוש.</p>
+  <p><b>מיקריו.</b> 1% מיקריו מוסיף גבישי חמאת קקאו יציבים מוכנים. השיטה פחות רגישה לטעויות טמפרטורה, אבל היא לא מגינה מעיבוי. מיקריו צריך לאחסן סגור ויבש.</p>
+  <p class="small">הציון: 60% מהגורם החלש ביותר, ו-40% ממוצע משוקלל (טמפ' 40%, נקודת טל 30%, לחות 30%). כך גורם אחד גרוע לא "נבלע" בממוצע.</p>
+</details>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+const $ = id => document.getElementById(id);
+const store = {
+  get(k,d){try{const v=localStorage.getItem('tmp_'+k);return v===null?d:JSON.parse(v)}catch(e){return d}},
+  set(k,v){try{localStorage.setItem('tmp_'+k,JSON.stringify(v))}catch(e){}}
+};
+
+// ---------- settings ----------
+const CHOC = {
+  dark: {melt:'40–45°', seed:'34–35°', work:'31–32°'},
+  milk: {melt:'40–45°', seed:'33–34°', work:'29–30°'},
+  white:{melt:'40–45°', seed:'33–34°', work:'28–29°'}
+};
+let state = {
+  choc: store.get('choc','dark'),
+  cool: store.get('cool','room'),
+  fridgeT: store.get('fridgeT',12),
+  grams: store.get('grams',1000),
+  topic: store.get('topic','temper-6xbjy3tfw73wqx'),
+  manual: false,
+  live: null,          // {t,h,at}
+  hist: store.get('hist',[])
+};
+if(!state.topic){
+  const a='abcdefghijkmnpqrstuvwxyz23456789';let s='';
+  const r=new Uint8Array(12);(window.crypto||{}).getRandomValues?crypto.getRandomValues(r):r.forEach((_,i)=>r[i]=Math.random()*256);
+  r.forEach(x=>s+=a[x%a.length]);
+  state.topic='temper-'+s; store.set('topic',state.topic);
+}
+
+// ---------- science ----------
+function dewPoint(t,rh){ // Magnus-Tetens (Alduchov & Eskridge coefficients)
+  const a=17.625,b=243.04;
+  const g=Math.log(Math.max(rh,1)/100)+a*t/(b+t);
+  return b*g/(a-g);
+}
+function lerp(x,x0,x1,y0,y1){ if(x<=x0) return y0; if(x>=x1) return y1; return y0+(y1-y0)*(x-x0)/(x1-x0); }
+function tempScore(t){
+  if(t>=18&&t<=21) return 100;
+  if(t>21){ if(t<=23) return lerp(t,21,23,100,75); if(t<=25) return lerp(t,23,25,75,40); if(t<=27) return lerp(t,25,27,40,10); return 5; }
+  if(t>=16) return lerp(t,16,18,80,100);
+  if(t>=14) return lerp(t,14,16,50,80);
+  return 40;
+}
+function rhScore(h){
+  if(h<=50) return 100;
+  if(h<=60) return lerp(h,50,60,100,85);
+  if(h<=65) return lerp(h,60,65,85,70);
+  if(h<=75) return lerp(h,65,75,70,35);
+  if(h<=85) return lerp(h,75,85,35,10);
+  return 5;
+}
+function dewScore(margin){
+  if(margin>=5) return 100;
+  if(margin>=3) return lerp(margin,3,5,85,100);
+  if(margin>=1) return lerp(margin,1,3,55,85);
+  if(margin>=0) return lerp(margin,0,1,35,55);
+  return Math.max(0,30+margin*8);
+}
+function evaluate(t,h){
+  const td=dewPoint(t,h);
+  const coldest = state.cool==='fridge' ? Math.min(+state.fridgeT,t) : t;
+  const margin = coldest-td;
+  const sT=tempScore(t), sH=rhScore(h), sD=dewScore(margin);
+  const min=Math.min(sT,sH,sD);
+  const w=0.4*sT+0.3*sD+0.3*sH;
+  const score=Math.round(0.6*min+0.4*w);
+  return {t,h,td,coldest,margin,sT,sH,sD,score,safeCool:td+3};
+}
+function color(s){ return s>=85?'var(--good)':s>=70?'var(--ok)':s>=50?'var(--warn)':'var(--bad)'; }
+function cls(s){ return s>=85?'good':s>=70?'ok':s>=50?'warn':'bad'; }
+function verdict(s){
+  if(s>=85) return ['תנאים מצוינים','זה זמן טוב לטמפר ולמלא תבניות.'];
+  if(s>=70) return ['תנאים טובים','אפשר לעבוד. שים לב להערות למטה.'];
+  if(s>=50) return ['גבולי','אפשר לעבוד בזהירות, אבל יש סיכון לבעיות.'];
+  return ['לא מומלץ עכשיו','עדיף לשפר את החדר קודם, או לחכות.'];
+}
+const f1 = x => (Math.round(x*10)/10).toFixed(1);
+
+function recommendations(e){
+  const r=[];
+  // temperature
+  if(e.t>25) r.push(['bad',`החדר חם מדי (${f1(e.t)}°). השוקולד יתקשה לאט ועלול לאבד טמפרור. הפעל מזגן ל-19–20° לפני שמתחילים.`]);
+  else if(e.t>23) r.push(['warn',`החדר קצת חם (${f1(e.t)}°). אפשר לעבוד, אבל ההתקשות בתבניות תהיה איטית. כדאי להוריד ל-21° ומטה.`]);
+  else if(e.t>21) r.push(['ok',`החדר ${f1(e.t)}°, טיפה מעל האידיאלי. זה בסדר לרוב העבודות.`]);
+  else if(e.t>=18) r.push(['good',`טמפרטורת החדר מצוינת (${f1(e.t)}°).`]);
+  else if(e.t>=16) r.push(['ok',`החדר קריר (${f1(e.t)}°). השוקולד בקערה יסמיך מהר, אז חמם אותו בקצרה לטמפרטורת העבודה כשצריך.`]);
+  else r.push(['warn',`החדר קר (${f1(e.t)}°). השוקולד יתקשה מהר מדי ויש סיכון לפסים. חמם את החדר קצת.`]);
+  // dew point
+  if(state.cool==='fridge'){
+    if(e.margin<0) r.push(['bad',`אל תכניס למקרר עכשיו. נקודת הטל היא ${f1(e.td)}° והמקרר ב-${f1(+state.fridgeT)}°, אז כשתוציא את השוקולד יתעבו עליו מים ותהיה פריחת סוכר.`]);
+    else if(e.margin<3) r.push(['warn',`המקרר (${f1(+state.fridgeT)}°) קרוב לנקודת הטל (${f1(e.td)}°). אם מקררים, הוצא את המוצר בתוך קופסה סגורה ופתח רק כשהגיע לטמפרטורת החדר.`]);
+    else r.push(['good',`אפשר לקרר במקרר בבטחה: ${f1(+state.fridgeT)}° גבוה מספיק מנקודת הטל (${f1(e.td)}°).`]);
+  } else {
+    r.push(['good',`בהתקשות בחדר אין סיכון לעיבוי. אם תרצה לקרר, אל תרד מתחת ל-${f1(e.safeCool)}°.`]);
+  }
+  // humidity
+  if(e.h>75) r.push(['bad',`לחות גבוהה מאוד (${Math.round(e.h)}%). מזגן במצב ייבוש (Dry) או מסיר לחות יעזרו. שמור את המיקריו סגור.`]);
+  else if(e.h>65) r.push(['warn',`הלחות גבוהה (${Math.round(e.h)}%). כדאי להפעיל מזגן או מסיר לחות, ולא להשאיר שוקולד פתוח הרבה זמן.`]);
+  else if(e.h>55) r.push(['ok',`הלחות ${Math.round(e.h)}%, סבירה. מתחת ל-55% זה עוד יותר טוב.`]);
+  else r.push(['good',`הלחות נמוכה ונוחה (${Math.round(e.h)}%).`]);
+  return r;
+}
+
+// ---------- render ----------
+function render(){
+  let src=null;
+  if(state.manual) src={t:+$('mT').value,h:+$('mH').value};
+  else if(state.live) src=state.live;
+  updateStatus();
+  if(!src) return;
+  const e=evaluate(src.t,src.h);
+  $('score').textContent=e.score;
+  const arc=$('arc'); arc.style.strokeDashoffset=452.4*(1-e.score/100); arc.style.stroke=color(e.score);
+  const [v,vs]=verdict(e.score); $('verdict').textContent=v; $('verdict').style.color=color(e.score); $('verdictSub').textContent=vs;
+  $('vT').textContent=f1(e.t)+'°'; $('vH').textContent=Math.round(e.h)+'%'; $('vD').textContent=f1(e.td)+'°';
+  [['T',e.sT],['H',e.sH],['D',e.sD]].forEach(([k,s])=>{ const b=$('b'+k); b.style.width=s+'%'; b.style.background=color(s); $('s'+k).textContent='ציון '+Math.round(s); });
+  $('safeCool').textContent=`הטמפרטורה הנמוכה ביותר שבטוח לקרר אליה עכשיו: ${f1(e.safeCool)}°C (נקודת טל + 3°)`;
+  $('recs').innerHTML=recommendations(e).map(([c,t])=>`<li class="${c}">${t}</li>`).join('');
+  document.title=`${e.score} · תנאי טמפרור`;
+}
+function updateStatus(){
+  const dot=$('dot'), st=$('statusText');
+  dot.className='dot';
+  if(state.manual){ st.textContent='הזנה ידנית'; return; }
+  if(!state.live){ st.textContent='ממתין לנתונים'; return; }
+  const age=(Date.now()-state.live.at)/1000;
+  const ago= age<60? 'לפני '+Math.max(1,Math.round(age))+' שנ׳' : 'לפני '+Math.round(age/60)+' דק׳';
+  if(age<120){ dot.classList.add('live'); st.textContent='חי · '+ago; }
+  else { dot.classList.add('stale'); st.textContent='אין עדכון · '+ago; }
+}
+function drawChart(){
+  const svg=$('chart'), H=state.hist.filter(p=>Date.now()-p.at<6*3600e3);
+  if(H.length<2){ svg.innerHTML='<text x="300" y="60" fill="#bfa999" font-size="14" text-anchor="middle">הגרף יופיע אחרי כמה קריאות</text>'; $('histInfo').textContent=''; return; }
+  const t0=H[0].at, t1=H[H.length-1].at||t0+1, W=600, Hh=110;
+  const x=p=>(1-(p.at-t0)/Math.max(1,t1-t0))*W; // RTL: newest on the left
+  const line=(fn,lo,hi,c)=>`<polyline fill="none" stroke="${c}" stroke-width="2" vector-effect="non-scaling-stroke" points="${H.map(p=>x(p)+','+(Hh-4-(fn(p)-lo)/(hi-lo)*(Hh-8))).join(' ')}"/>`;
+  const sc=p=>evaluate(p.t,p.h).score;
+  svg.innerHTML=line(p=>p.t,10,35,'#e0584f')+line(p=>p.h,0,100,'#5fa8d9')+line(sc,0,100,'#d9a35b');
+  const mins=Math.round((t1-t0)/60000);
+  $('histInfo').textContent=`${H.length} קריאות · ${mins} דק׳`;
+}
+
+// ---------- live data via ntfy ----------
+function parseMsg(m){
+  if(!m) return null;
+  let t=null,h=null;
+  try{ const j=JSON.parse(m); t=j.t??j.temp??j.temperature; h=j.h??j.hum??j.humidity; }catch(e){}
+  if(t==null){
+    const mt=String(m).match(/t\s*[:=]\s*(-?\d+(?:[.,]\d+)?)/i), mh=String(m).match(/h\s*[:=]\s*(\d+(?:[.,]\d+)?)/i);
+    if(mt) t=mt[1]; if(mh) h=mh[1];
+  }
+  if(t==null||h==null) return null;
+  t=parseFloat(String(t).replace(',','.')); h=parseFloat(String(h).replace(',','.'));
+  if(!isFinite(t)||!isFinite(h)) return null;
+  if(t>45) t=(t-32)*5/9;      // reading arrived in °F
+  if(h<=1 && h>0) h*=100;     // reading arrived as a fraction
+  return {t,h};
+}
+function onReading(r,at){
+  state.live={t:r.t,h:r.h,at:at||Date.now()};
+  const last=state.hist[state.hist.length-1];
+  if(!last||state.live.at-last.at>5000){
+    state.hist.push({t:r.t,h:r.h,at:state.live.at});
+    state.hist=state.hist.filter(p=>Date.now()-p.at<6*3600e3).slice(-800);
+    store.set('hist',state.hist);
+  }
+  render(); drawChart();
+}
+let es=null;
+function connect(){
+  if(es){ try{es.close()}catch(e){} }
+  const base='https://ntfy.sh/'+encodeURIComponent(state.topic);
+  // last reading from the past 15 minutes
+  fetch(base+'/json?poll=1&since=15m').then(r=>r.text()).then(txt=>{
+    const lines=txt.trim().split('\n').filter(Boolean).map(l=>{try{return JSON.parse(l)}catch(e){return null}}).filter(x=>x&&x.event==='message');
+    lines.forEach(ev=>{ const r=parseMsg(ev.message); if(r) onReading(r,ev.time*1000); });
+  }).catch(()=>{});
+  try{
+    es=new EventSource(base+'/sse');
+    es.onmessage=ev=>{ try{ const d=JSON.parse(ev.data); if(d.event==='message'){ const r=parseMsg(d.message); if(r) onReading(r,d.time?d.time*1000:Date.now()); } }catch(e){} };
+  }catch(e){}
+}
+function urlTemplate(){ return `https://ntfy.sh/${state.topic}/publish?message=t:[T];h:[H]`; }
+
+// ---------- UI wiring ----------
+function seg(id,key,after){
+  const el=$(id);
+  el.querySelectorAll('button').forEach(b=>{
+    b.classList.toggle('on',b.dataset.v===state[key]);
+    b.onclick=()=>{ state[key]=b.dataset.v; store.set(key,state[key]); el.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); after&&after(); render(); drawChart(); };
+  });
+}
+function chocUI(){ const c=CHOC[state.choc]; $('tMelt').textContent=c.melt; $('tSeed').textContent=c.seed; $('tWork').textContent=c.work; }
+function coolUI(){ $('fridgeBox').style.display=state.cool==='fridge'?'inline':'none'; }
+function gramsUI(){ const g=+$('grams').value||0; $('mycryoG').textContent=(Math.round(g)/100).toFixed(g<1000?1:0)+' g'; }
+seg('chocSeg','choc',chocUI); seg('coolSeg','cool',coolUI);
+$('fridgeT').value=state.fridgeT; $('fridgeT').oninput=e=>{ state.fridgeT=+e.target.value; store.set('fridgeT',state.fridgeT); render(); };
+$('grams').value=state.grams; $('grams').oninput=e=>{ state.grams=+e.target.value; store.set('grams',state.grams); gramsUI(); };
+$('mT').oninput=e=>{ $('mTl').textContent=e.target.value+'°C'; render(); };
+$('mH').oninput=e=>{ $('mHl').textContent=e.target.value+'%'; render(); };
+$('manualBtn').onclick=()=>{ state.manual=!state.manual; $('manual').classList.toggle('show',state.manual); $('manualBtn').textContent=state.manual?'חזור לנתונים חיים':'הפעל הזנה ידנית'; render(); };
+$('topic').value=state.topic; $('urlTpl').textContent=urlTemplate();
+$('saveTopic').onclick=()=>{ const v=$('topic').value.trim().replace(/[^A-Za-z0-9_-]/g,''); if(!v) return; state.topic=v; store.set('topic',v); $('topic').value=v; $('urlTpl').textContent=urlTemplate(); state.live=null; connect(); render(); };
+$('copyUrl').onclick=()=>{ try{ navigator.clipboard.writeText(urlTemplate()).then(()=>{$('copyUrl').textContent='הועתק';setTimeout(()=>$('copyUrl').textContent='העתק',1500)}).catch(()=>{}); }catch(e){} };
+$('testBtn').onclick=()=>{
+  $('testRes').textContent='שולח…';
+  fetch(`https://ntfy.sh/${encodeURIComponent(state.topic)}`,{method:'POST',body:'t:20.5;h:52'})
+    .then(r=>{ $('testRes').textContent=r.ok?'נשלח. אמור להופיע 20.5° ו-52% תוך שנייה.':'השליחה נכשלה ('+r.status+')'; })
+    .catch(()=>{ $('testRes').textContent='אין חיבור ל-ntfy.sh'; });
+};
+if(!state.hist.length) $('setup').open=true;
+
+chocUI(); coolUI(); gramsUI();
+const last=state.hist[state.hist.length-1];
+if(last && Date.now()-last.at<15*60e3) state.live={...last};
+render(); drawChart(); connect();
+setInterval(()=>{ updateStatus(); },5000);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) connect(); });
+})();
+</script>
+</body>
+</html>
